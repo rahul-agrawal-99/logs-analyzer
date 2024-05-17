@@ -8,7 +8,6 @@
 
 # streamlit run analyseLogs.py --server.runOnSave=True
 
-from pyparsing import C
 import streamlit as st
 import pandas as pd
 from urllib.parse import urlparse
