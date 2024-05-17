@@ -1,159 +1,228 @@
-import json 
-import os 
-import requests
-import random
-import time
-
-# mainPath = r"C:\Users\rahul-al\Desktop\New Asana JSON\Done"
-# access = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjkzNjMzNDk0LCJpYXQiOjE2OTM1NDcwOTQsImp0aSI6ImZlYTA0ZjEwYmFhMTRjNDE5MGI4MjgwYjgzZDNkY2U2IiwidXNlcl9pZCI6IjAwNTU3NjA5LTFhOTQtNDI0Yy04ZGYxLWVlNzk2ZTk5NGU5MCJ9.r5SLiFBFOELop_C_s4XqnOmrqYfAqzXrXRcS-FSsCRo"
+# pip install streamlit==1.34.0
+# pip install numpy==1.26.0
 
 
-# headers = {
-#     "Authorization": "Bearer " + access,
-#     # "Content-Type": "multipart/form-data;boundary=---WebKitFormBoundary7MA4YWxkTrZu0gW"
-# }
+# streamlit run analyseLogs.py
+
+#  RUN With Reload
+
+# streamlit run analyseLogs.py --server.runOnSave=True
+
+from pyparsing import C
+import streamlit as st
+import pandas as pd
+from urllib.parse import urlparse
+import json
+import base64
 
 
-# # userID = "327d31ee-2132-422e-bafe-7935397e2426"
-# userID = "e347ceae-0d61-4661-8cd5-748b30d9708e"    # local
-# workoutId = "40c5cc3d-8083-489e-a5d8-bb96d51bbd07"   # morning
+def decode_jwt(token):
+    try:
 
-# mainURL = "http://localhost:8000"
-# # mainURL = "https://api.cimpl-yoga.atomicloops.link"
-# createAsanaURL = mainURL + "/yoga/asana/"
-# linkAsanaToWorkoutURL = mainURL + "/yoga/workout-asana/multiple-create/"
-# postlogURL = mainURL + "/yoga/metrics/"
-# logateachstepURL = mainURL + "/logs/"
-
-# workasanaList = []
-# jsonlist = os.listdir(mainPath)
-
-# mainvectorPath = r"C:\Users\rahul-al\Desktop\New Asana JSON\Yoga Vector\Yoga Vector"
-
-# vectorList = os.listdir(mainvectorPath)
-
-# print(vectorList)
+        firstPart = token.split(".")[1]
+        decoded = base64.urlsafe_b64decode(firstPart).decode("utf-8")
+        decoded = json.loads(decoded)
+        return decoded
+    except Exception as e:
+        return None
 
 
-
-# #  creating asana 
-# for asana in jsonlist:
-#     try:
-#         cpath = mainPath + "\\" + asana
-#         vectorPath = mainvectorPath + "\\" + asana.split(".")[0]  + ".svg"
-#         print("For asana: ", asana)
-#         if asana.endswith(".json") == False:
-#             raise Exception(f"{asana} Not a json file")
-#         with open(cpath, "r") as jsonFile:
-#             jsondata = json.load(jsonFile)
-#         # workasanaList.append({
-#         #     "asanaId": data["id"],
-#         #     "workoutId": workoutId
-#         # })
-#         otherNames = jsondata["metadata"]["otherNames"]
-#         family = jsondata["metadata"]["family"]
-#         family = family.replace(" ", "")
-#         senddata = {
-#             "name": jsondata["name"],
-#             "otherNames": ",".join(otherNames) if otherNames else "",
-#             "family": family.capitalize()
-#             # "data": data
-#             # "file": jsondata.read()
-#         }
-#         # with open(cpath, 'r') as json_file:
-#         #     senddata['file'] = json_file.read()
-#         # print(senddata)
-#         files = {'file': (asana, open(cpath, 'rb')), 'imgFile': (asana.split(".")[0] + ".svg", open(vectorPath, 'rb'))}
-#         # res = requests.post(createAsanaURL, headers=headers, data=senddata)
-#         res = requests.post(createAsanaURL, headers=headers, data=senddata, files=files)
-#         # res = requests.post(createAsanaURL, headers=headers, json=data)
-#         html = res.text
-#         if res.status_code != 201:
-#             print("DATA: ", senddata)
-#             raise Exception("Error in creating asana: " + html)
-#         resJson = res.json()
-#         asanaId = resJson["data"]["id"]
-#         workasanaList.append({
-#             "asanaId": asanaId,
-#             "workoutId": workoutId
-#         })
+st.set_page_config(layout="wide")
 
 
-#         #  generating random logs 
-#         jsondata = resJson["data"]["data"]["steps"]
-#         print("Has ", len(jsondata), " steps")
-#         for index,step in enumerate(jsondata):
-#             allAngles = step["angles"]
-#             tth = step["timeToHold"]
-#             angleData = []
-#             for _ in range(tth):
-#                 tempData = []
-#                 for angle in allAngles:
-#                     minval = angle["tolerance"]["lower"]
-#                     maxval = angle["tolerance"]["upper"]
-#                     randomval = random.randint(minval, maxval)
-#                     # print(f"Step: {index+1}, Angle: {angle['comments']}, Value: {randomval} tth: {tth}")
-#                     tempData.append(randomval)
-#                 angleData.append(tempData)
-#             # print(angleData)
-#             res = requests.post(logateachstepURL, headers=headers, json={
-#                 "userId": userID,
-#                 "workoutId": workoutId,
-#                 "asanaId": asanaId,
-#                 "data" : {
-#                     "stepNumber": index+1,
-#                     "allAngles": angleData
-#                 }
-#             })
-#             if res.status_code != 201:
-#                 raise Exception("Error in logging data: " + html)
-#             if len(jsondata) > 1:
-#                 # print("Success in logging data for step: ", index+1 , " for asana: ", asanaId)
-#                 sleepTime = int(random.randint(0, int(tth*2.5)))
-#                 time.sleep(tth  + sleepTime)
-
-#         res = requests.post(postlogURL, headers=headers, json={
-#             "userId": userID,
-#             "workoutId": workoutId,
-#             "asanaId": asanaId
-#         })
-#         print(res.text)
-#         # break
-#     except Exception as e:
-#         print(f"Error in creating {asana}: ", e)
-#         continue
+SUCCESS_RANGE = [200, 299]
+BAD_REQUEST_RANGE = [400, 499]
+SERVER_ERROR_RANGE = [500, 599]
 
 
+def main():
+    st.title("Logs Analyser")
+    # st.write("")
 
-# #  linking asanas to workout
-# res  = requests.post(linkAsanaToWorkoutURL, headers=headers, json=workasanaList)
-# html = res.text
-# if res.status_code != 201:
-#     raise Exception("Error in linking asana to workout: " + html)
-# else:
-#     print("Success in linking asana to workout")
+    #  here user can upload file
+
+    #  divide into 2 columns: 1 for file upload and 2nd for direct content input
+
+    col1, col2 = st.columns(2)
+
+    PROCESS = False
+    PROCESS_V2 = False
+
+    CONSIDER_UPLOAD = False
+    CONSIDER_DIRECT_INPUT = False
+
+    with col1:
+        st.write("Upload File")
+
+        uploaded_file = st.file_uploader("Choose a file")
+        if uploaded_file is not None:
+            file_contents = uploaded_file.getvalue()
+            # st.write(file_contents)
+            file_contents_1 = file_contents.decode("utf-8")
+            PROCESS = True
+            CONSIDER_UPLOAD = True
+
+    with col2:
+        st.write("Direct Text Input")
+        file_contents_2 = st.text_area("Enter Text", height=100)
+        if file_contents_2:
+            PROCESS = True
+            CONSIDER_DIRECT_INPUT = True
+
+    if CONSIDER_UPLOAD & CONSIDER_DIRECT_INPUT:
+        st.error("Select Only One Option to Proceed, Currently Both are Selected")
+    else:
+        PROCESS_V2 = True
+
+    if PROCESS & PROCESS_V2:
+
+        if CONSIDER_UPLOAD:
+            st.success("Using File Upload")
+            file_contents = file_contents_1
+        else:
+            st.success("Using Direct Text Input")
+            file_contents = file_contents_2
+
+        contents = []
+
+        for index, line in enumerate(file_contents.split("\n")):
+            try:
+                contents.append(json.loads(line))
+            except Exception as e:
+                pass
+                # print(f"Error in line {index}: {e}")
+                # st.write(f"Error in line {index}: {e}")
+
+        FILTERED_TOKEN = False
+
+        # if len(contents) == 0:
+        #     st.warning("No Data Found")
+        #     return
+
+        for c in contents:
+            api = c.get("api")
+            parsed_url = urlparse(api)
+            endpoint = parsed_url.path
+            c["endpoint"] = endpoint
+            c["headers"] = json.loads(c["headers"])
+            # print(c["headers"])
+            user_id = None
+            if not FILTERED_TOKEN:
+                try:
+                    token = c["headers"]["AUTHORIZATION"]
+                    if token == "***FILTERED***":
+                        FILTERED_TOKEN = True
+                        continue
+                    token = token.split(" ")[1]
+                    decoded_token = decode_jwt(token)
+                    user_id = decoded_token.get("user_id")
+                except Exception as e:
+                    # print(e)
+                    pass
+
+            c["user_id"] = user_id
+
+        all_keys = list(set(contents[0].keys()))
+
+        # print(all_keys)
+        # ['added_on', 'api', 'headers', 'body', 'method', 'client_ip_address', 'response', 'status_code', 'execution_time', 'endpoint']
+
+        #  set checkbox for all keys
+
+        defaukt_keys_selected = ['method', "endpoint", 'body', 'response', 'status_code', 'execution_time']  # ['added_on', 'api', 'headers', 'body', 'method', 'client_ip_address', 'response', 'status_code', 'execution_time']
+
+        selected_keys = st.multiselect("Select Keys", all_keys, defaukt_keys_selected)
+
+        #  Analysis
+
+        #  write excel like table where columsn is selected keys and rows are data
+
+        df = pd.DataFrame(contents)
+
+        if FILTERED_TOKEN:
+            st.warning("Token is filtered, can't decode user_id")
+
+        st.write(df[selected_keys])
+
+        #  boolean for additional analysis
+
+        if st.checkbox("Advanced Analysis"):
+            st.title("Advanced Analysis")
+
+            # -----------  Total Hits Count -----------
+
+            total_requests = len(df)
+
+            st.write(f"Total Requests: {total_requests}")
+            st.write("-----------------------------")
+
+            # -----------  Total Hits Count with status code -----------
+
+            unique_endpoints = df["endpoint"].unique()
+
+            unique_endpoints_df = []
+
+            for endpoint in unique_endpoints:
+                total_count_hit = df[df["endpoint"] == endpoint].shape[0]
+
+                all_status_codes = df[df["endpoint"] == endpoint]["status_code"].values
+
+                sucess_count = len([x for x in all_status_codes if x in SUCCESS_RANGE])
+                bad_request_count = len([x for x in all_status_codes if x in BAD_REQUEST_RANGE])
+                server_error_count = len([x for x in all_status_codes if x in SERVER_ERROR_RANGE])
+                avg_execution_time = df[df["endpoint"] == endpoint]["execution_time"].mean()
+
+                unique_endpoints_df.append({"endpoint": endpoint, "Hits": total_count_hit, "Success": sucess_count, "Bad Request": bad_request_count, "Server Error": server_error_count, "Avg Execution Time": avg_execution_time})
+
+            endpoints_df = pd.DataFrame(unique_endpoints_df)
+
+            st.write(f"Total Unique Endpoints: {len(unique_endpoints)}")
+
+            st.write("API Hits by Endpoint with status code range")
+
+            st.write(endpoints_df)
+            st.write("-----------------------------")
+
+            # -----------  Analyze header -----------
+
+            #  Unique USER_AGENT for all requests
+
+            user_agents = df["headers"].apply(lambda x: x.get("USER_AGENT", "NA")).unique()
+            user_agents_df = []
+
+            for user_agent in user_agents:
+                user_agents_df.append({"User Agent": user_agent, "Hits": len(df[df["headers"].apply(lambda x: x.get("USER_AGENT", "NA")) == user_agent])})
+
+            st.write("API Hits by User Agent")
+            st.write(pd.DataFrame(user_agents_df))
+            st.write("-----------------------------")
+
+            #  Unique User
+
+            users = df["user_id"].unique()
+
+            users_df = []
+
+            for user in users:
+                users_df.append({"User Id": user, "Hits": len(df[df["user_id"] == user])})
+
+            st.write("API Hits by User Id")
+            st.write(pd.DataFrame(users_df))
+            st.write("-----------------------------")
+
+            # Unique IP Address
+
+            ip_addresses = df["client_ip_address"].unique()
+
+            ip_addresses_df = []
+
+            for ip_address in ip_addresses:
+                ip_addresses_df.append({"IP Address": ip_address, "Hits": len(df[df["client_ip_address"] == ip_address])})
+
+            st.write("API Hits by IP Address")
+            st.write(pd.DataFrame(ip_addresses_df))
+            st.write("-----------------------------")
 
 
-
-
-data = {"name": "Vrikshasana", "steps": [{"name": "step 1", "angles": [{"value": 230, "vertex": ["RIGHT_SHOULDER", "RIGHT_ELBOW", "RIGHT_WRIST"], "comments": "right_hand", "tolerance": {"lower": 200, "upper": 245}}, {"value": 130, "vertex": ["LEFT_SHOULDER", "LEFT_ELBOW", "LEFT_WRIST"], "comments": "left_hand", "tolerance": {"lower": 110, "upper": 150}}, {"value": 173, "vertex": ["RIGHT_WRIST", "RIGHT_SHOULDER", "RIGHT_HIP"], "comments": "right_wrist_shoulder_hip", "tolerance": {"lower": 143, "upper": 193}}, {"value": 196, "vertex": ["LEFT_WRIST", "LEFT_SHOULDER", "LEFT_HIP"], "comments": "left_wrist_shoulder_hip", "tolerance": {"lower": 176, "upper": 216}}, {"value": 235, "vertex": ["RIGHT_SHOULDER", "RIGHT_HIP", "RIGHT_KNEE"], "comments": "right_shoulder_hip_knee", "tolerance": {"lower": 215, "upper": 275}}, {"value": 179, "vertex": ["LEFT_SHOULDER", "LEFT_HIP", "LEFT_KNEE"], "comments": "left_shoulder_hip_knee", "tolerance": {"lower": 159, "upper": 199}}, {"value": 179, "vertex": ["LEFT_SHOULDER", "LEFT_HIP", "LEFT_ANKLE"], "comments": "left_shoulder_hip_ankle", "tolerance": {"lower": 159, "upper": 199}}, {"value": 34, "vertex": ["RIGHT_HIP", "RIGHT_KNEE", "RIGHT_ANKLE"], "comments": "right_lower_body", "tolerance": {"lower": 14, "upper": 54}}, {"value": 178, "vertex": ["LEFT_HIP", "LEFT_KNEE", "LEFT_ANKLE"], "comments": "left_lower_body", "tolerance": {"lower": 158, "upper": 210}}, {"value": 191, "vertex": ["RIGHT_ELBOW", "RIGHT_SHOULDER", "RIGHT_HIP"], "comments": "right_elbow_shoulder_hip", "tolerance": {"lower": 171, "upper": 220}}, {"value": 188, "vertex": ["LEFT_ELBOW", "LEFT_SHOULDER", "LEFT_HIP"], "comments": "left_elbow_shoulder_hip", "tolerance": {"lower": 155, "upper": 208}}, {"value": 172, "vertex": ["LEFT_ANKLE", "LEFT_HIP", "LEFT_WRIST"], "comments": "left_ankle_hip_wrist", "tolerance": {"lower": 152, "upper": 192}}, {"value": 33, "vertex": ["LEFT_ANKLE", "LEFT_HIP", "RIGHT_ANKLE"], "comments": "left_right_leg", "tolerance": {"lower": 13, "upper": 53}}, {"value": 30, "vertex": ["LEFT_SHOULDER", "LEFT_WRIST", "RIGHT_SHOULDER"], "comments": "left_right_hand_angle", "tolerance": {"lower": 10, "upper": 50}}], "imageURL": "https://www.arhantayoga.org/wp-content/uploads/2022/03/Tree-Pose-%E2%80%93-Vrikshasana.jpg", "timeToHold": 5, "instructions": "left foot to the floor , while the right foot is placed on the left thigh.  Both hands should be joined together in the Namaskar Mudra (prayer pose) on above head"}], "metadata": {"do": "DESC", "svg": "https://yoga-ai-cimpl-dev.s3.ap-south-1.amazonaws.com/yoga-ai/yoga-vector/Vrikshasana.svg", "dont": "DESC", "time": 5, "level": "Beginner", "family": "standing", "demoUrl": "https://youtu.be/qpuY0jXimtQ", "otherNames": ["Plough Pose, Plow Pose"], "description": "Angushtamadhye or Angushta Ma Dyai"}}
-
-
-
-
-def random_logs_generator(jsonData):
-    timeToHold = jsonData["timeToHold"]
-    angles = jsonData["angles"]
-    angleData = []
-    for _ in range(timeToHold):
-        tempData = []
-        for angle in angles:
-            minval = angle["tolerance"]["lower"]
-            maxval = angle["tolerance"]["upper"]
-            randomval = random.randint(minval, maxval)
-            tempData.append(randomval)
-        angleData.append(tempData)
-    return angleData
-
-
-print(random_logs_generator(data["steps"][0]))
+if __name__ == "__main__":
+    main()
